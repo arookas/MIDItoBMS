@@ -1,0 +1,10 @@
+# VS folders
+bin/
+obj/
+Properties/
+
+# Solution/project
+*.sln
+*.v12.suo
+*.csproj
+*.csproj.user
