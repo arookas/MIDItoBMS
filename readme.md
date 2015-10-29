@@ -2,11 +2,11 @@
 
 ## Summary
 
-*MIDItoBMS* is a command-line program Ifve been developing purely for fun and to put my reverse-engineering knowledge to the test. Simply put, it allows for the conversion of MIDI files to BMS files for SMS.
+*MIDItoBMS* is a command-line program I've been developing purely for fun and to put my reverse-engineering knowledge to the test. Simply put, it allows for the conversion of MIDI files to BMS files for SMS.
 
 The *MIDItoBMS* converter also supports loop-point controllers from the EMIDI specifications in order to specify loops. Various modes and options can also be enabled or configured through optional arguments in the command line. Even more BMS features not directly supported by *MIDItoBMS* can still be used indirectly via sequencer-specific events.
 
-Specifically, the goal of this program is to output a BMS file with equivalent contents to that of a given MIDI file, losslessly. This definition means it is unreasonable to expect a MIDI file originally converted from a BMS file to be put through the program and result in a BMS file identical to the original ? while MIDI Ë BMS is a lossless conversion, BMS Ë MIDI is not.
+Specifically, the goal of this program is to output a BMS file with equivalent contents to that of a given MIDI file, losslessly. This definition means it is unreasonable to expect a MIDI file originally converted from a BMS file to be put through the program and result in a BMS file identical to the original — while MIDI > BMS is a lossless conversion, BMS > MIDI is not.
 
 ### Changelog
 
@@ -31,7 +31,7 @@ Specifically, the goal of this program is to output a BMS file with equivalent c
 
 If only a single argument is passed, *MIDItoBMS* will interpret the argument as an absolute or relative path to the MIDI file to convert, and convert said MIDI with the all of the default settings. This enables quick-and-easy drag-and-drop usage.
 
-If two or more arguments are specified, the entire command line will be interpreted as list of options. Each option begins with a hyphen (“-”) and the name of the option (case insensitive). Options can have zero or more arguments.
+If two or more arguments are specified, the entire command line will be interpreted as list of options. Each option begins with a hyphen ("-") and the name of the option (case insensitive). Options can have zero or more arguments.
 
 The options must be one or more of the following:
 
@@ -42,13 +42,13 @@ The options must be one or more of the following:
 |_**-trackdetection** \<mode\>_|Sets which mode is used to detect root and child tracks in the MIDI. By default, automatic track detection is enabled.|
 |***-addtrackinit***|Enables the automatic addition of the track-initialization callback command (E7) to each detected child track (not the global/root track). The argument passed to each callback will default to zero (unless overwritten by the track's meta data). By default, E7 commands are not added to the beginning of each child track.|
 |_**-velocityscale** \<file\>_|Changes the scale of the velocity of all the note-on events in the input MIDI. *\<scalar\>* is a double-precision floating-point number. Values less than one soften notes, while values greater than one amplify notes. The scaled velocities will still be clamped to the range 0 - 127. By default, the velocity scalar is one.|
-|***-skippitchrange***|Skips the automatic addition of a pitch-range command being added to child tracks. Useful if the MIDI ends up overriding it anyway. By default, the pitch range is set to }2 semitones (the default as per the MIDI standard).|
+|***-skippitchrange***|Skips the automatic addition of a pitch-range command being added to child tracks. Useful if the MIDI ends up overriding it anyway. By default, the pitch range is set to +/- 2 semitones (the default as per the MIDI standard).|
 |_**-perfduration** \<pulses\>_|Enables performance-control interpolation by putting the constant value *\<pulses\>* (specified as a 16-bit, unsigned integer) as the duration of each performance-control command. May result in the a smoother-sounding BMS. Low values are recommended. Default value is zero (disabled).|
 |***-batch***|Disables any usage of stdin. This makes it useful for batch usage, as the program will run and end without pausing for input. By default, this is disabled so drag-and-drop users are able to read and analyze any ouput (including error messages) in the console window.|
 
 ## Track Detection
 
-BMS files are played using a single, root track, which later creates a hierarchy of child tracks asynchronously playing separate sections of the BMS. In order to emulate this in *MIDItoBMS*, there must be one track designated as the root track used to create the child tracks. Currently, only a single generation of child tracks is supported ? this is because MIDI files do not have track hierarchy. Thus, a limit of 16 tracks per BMS (excluding the root track) is imposed.
+BMS files are played using a single, root track, which later creates a hierarchy of child tracks asynchronously playing separate sections of the BMS. In order to emulate this in *MIDItoBMS*, there must be one track designated as the root track used to create the child tracks. Currently, only a single generation of child tracks is supported — this is because MIDI files do not have track hierarchy. Thus, a limit of 16 tracks per BMS (excluding the root track) is imposed.
 
 In any track detection mode, if no suitable root track is found, the MIDI file is in error and the conversion fails. Child tracks are optional and a suitable BMS file will still be created if there are no child tracks detected.
 
@@ -80,7 +80,7 @@ The meta data is formatted in a comma-separated list of key-value pairs. The key
 |***track-id***|Specifies the track ID of the track. Must be a whole number between 0 and 15 (inclusive).|
 |***track-arg***|Specifies the argument to pass to the track-initialization command on the track, as a 16-bit, signed integer. Only used if the ***-addtrackinit*** option is specified on the command line. If this key is not present, a default value of zero is assumed.|
 
-Note that for all integer keys, the value is assumed to be specified in decimal. To specify the value in hexadecimal, suffix the value with the letter “H” (case insensitive).
+Note that for all integer keys, the value is assumed to be specified in decimal. To specify the value in hexadecimal, suffix the value with the letter "H" (case insensitive).
 
 ## Implementation
 
