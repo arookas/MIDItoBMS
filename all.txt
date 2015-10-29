@@ -1,0 +1,39 @@
+								arookas Library License Version 2
+										October 26, 2015
+				Copyright (C) 2014-2015 Jason Elijah "arookas" Bolyard (arookas.com)
+
+
+	1. Definitions
+
+	The term "License" used herein refers to version 2 of the arookas Library License.
+
+	The "Library" refers to the arookas Library as written by the copyright holder of
+this License (the "Author").
+
+	The "Work" refers to any work utilizing and/or incorporating the Library in any way, 
+including, but not limited to, dynamic linking.
+
+
+	2. Using the Library
+
+	By utilizing and/or incoporating the Library in any way, all the author(s) of the Work
+(the "User") agree to and are bound by all terms of this License.
+
+	The User may use, reference, dynamically link, or otherwise utilize the Library in the Work,
+provided the Library:
+
+		a) does not contain any modifications which are not by the Author of the Library;
+
+		b) remains a separate file from the Work (e.g. not embedded in a primary executable
+	file or any other resource utilized by the Work);
+
+		c) is not renamed or otherwise aliased;
+
+		d) a verbatim copy of this License is provided with the Work and Library.
+
+
+	3. Updates to the License
+
+	This License may be revised at any later point in the future (each revision being given 
+an identifying version number and date), without prior notice, in order to address vague 
+criteria, loop holes, or other errors. Each revision will cover a similar premise.
