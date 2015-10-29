@@ -24,8 +24,11 @@ namespace arookas
 				CommandLine cmd = new CommandLine(arguments);
 				if (cmd.Count < 1)
 				{
-					Message("<input.mid> [[-flag] ...]");
-					Message("See included 'readme.pdf' for detailed usage information.");
+					Message("Usage (drag & drop):");
+					Message("miditobms <input.mid>");
+					Message("Usage (command-line):");
+					Message("miditobms -input <in.mid> [-option [...]]");
+					Message("See official repo page for more details.");
 					Pause();
 				}
 				else
