@@ -9,6 +9,7 @@ namespace arookas
 {
 	static class MIDItoBMS
 	{
+		static BmsOptions bOptions;
 		static readonly Version version = new Version(0, 3, 0);
 		static readonly string seperator = new String('=', 75);
 
@@ -25,17 +26,17 @@ namespace arookas
 				{
 					Message("<input.mid> [[-flag] ...]");
 					Message("See included 'readme.pdf' for detailed usage information.");
-					Console.ReadKey();
+					Pause();
 				}
 				else
 				{
-					BmsOptions bOptions = LoadOptions(cmd);
+					bOptions = LoadOptions(cmd);
 					DisplayOptions(bOptions);
 					Message("Loading MIDI...");
 					Midi midi = Midi.FromFile(bOptions.InputFile);
 					MidiConverter.Convert(midi, bOptions);
 					Message("Done!");
-					Console.ReadKey();
+					Pause();
 				}
 			}
 #if DEBUG
@@ -74,6 +75,7 @@ namespace arookas
 				IgnoreMidiPans = cmd.HasArg("-ignoremidipans"),
 				AddTrackInit = cmd.HasArg("-addtrackinit"),
 				SkipPitchRange = cmd.HasArg("-skippitchrange"),
+				Batch = cmd.HasArg("-batch"),
 			};
 			if (!TryGetArg(cmd, "-input", out bOptions.InputFile))
 			{
@@ -167,9 +169,15 @@ namespace arookas
 			Console.Write("ERROR: ");
 			Console.WriteLine(format, args);
 			Console.ResetColor();
-			Console.ReadKey();
+			Pause();
 			Environment.Exit(1);
 		}
-
+		public static void Pause()
+		{
+			if (!bOptions.Batch)
+			{
+				Console.ReadKey();
+			}
+		}
 	}
 }

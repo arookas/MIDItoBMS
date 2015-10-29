@@ -14,6 +14,7 @@
 		public bool IgnoreMidiPans;
 		public bool AddTrackInit;
 		public bool SkipPitchRange;
+		public bool Batch;
 
 		public BmsTrackDetectionMode TrackDetection = BmsTrackDetectionMode.Auto;
 
