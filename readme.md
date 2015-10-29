@@ -95,38 +95,38 @@ The MIDI header contains the time division. The MIDI standard defines the PPQN a
 
 ### Channel Events
 
-*MIDItoBMS* implements most channel events. Only channel events whose channel number matches that of the current trackfs track ID will be converted. The following table notes how each channel event is converted into a BMS command (note that BMS commands are specified in hexadecimal):
+*MIDItoBMS* implements most channel events. Only channel events whose channel number matches that of the current track's track ID will be converted. The following table notes how each channel event is converted into a BMS command (note that BMS commands are specified in hexadecimal):
 
-|MIDI| |BMS|Notes|
-|----|-|---|-----|
-|Note On|⇒|00-7F|Note ons with a velocity of zero will be converted to BMS voice-off commands (see below). Voice IDs are assigned automatically. Only 7 simultaneous voices are allowed per track (the voice ID 0 is **not** supported by *MIDItoBMS*).|
-|Note Off|⇒|81-87|89-8F are **not** supported. Velocity is ignored.|
-|Program Change|⇒|A4|Only programs 0-127 are selectable. To select other programs, you'll need use sequencer-specific events.|
-|Pitch Bend|⇒|9C-9F|16-bit direct form is always used. Other forms are **not** supported. Durations are supported via the command-line.|
-|Note Aftertouch|⇏| |**Not supported.**|
-|Channel Aftertouch|⇏| |**Not supported.**|
-|Controller|⇒|???|Some controllers are supported (see below).|
+|MIDI|BMS|Notes|
+|----|---|-----|
+|Note On|00-7F|Note ons with a velocity of zero will be converted to BMS voice-off commands (see below). Voice IDs are assigned automatically. Only 7 simultaneous voices are allowed per track (the voice ID 0 is **not** supported by *MIDItoBMS*).|
+|Note Off|81-87|89-8F are **not** supported. Velocity is ignored.|
+|Program Change|A4|Only programs 0-127 are selectable. To select other programs, you'll need use sequencer-specific events.|
+|Pitch Bend|9C-9F|16-bit direct form is always used. Other forms are **not** supported. Durations are supported via the command-line.|
+|Note Aftertouch| |**Not supported.**|
+|Channel Aftertouch| |**Not supported.**|
+|Controller|???|Some controllers are supported (see below).|
 
 ### Meta Events
 
 The following meta events are supported by *MIDItoBMS*:
 
-|MIDI| |BMS|Notes|
-|----|-|---|-----|
-|Tempo Change|⇒|FD|Default tempo is 120 BPM (for the root track) or inherited from the parent (for child tracks). Should be placed on the root track; otherwise, you might get unpredictable results.|
-|Track Name|⇒| |Used only to store meta data for the track.|
-|Sequencer-specific|⇒| |Used for inserting raw BMS commands.|
-|End of Track|⇒|FF|Ends the track. (Note that when a track ends, all of descendant tracks are automatically ended as well).|
+|MIDI|BMS|Notes|
+|----|---|-----|
+|Tempo Change|FD|Default tempo is 120 BPM (for the root track) or inherited from the parent (for child tracks). Should be placed on the root track; otherwise, you might get unpredictable results.|
+|Track Name| |Used only to store meta data for the track.|
+|Sequencer-specific| |Used for inserting raw BMS commands.|
+|End of Track|FF|Ends the track. (Note that when a track ends, all of descendant tracks are automatically ended as well).|
 
 ### Controllers
 
 Only a handful of controllers are implemented in *MIDItoBMS*. The combined value of the MSB and LSB for the 14-bit continuous controllers are calculated as stated in the MIDI standard (para. 2, p. 12). The following table shows the supported controllers (controller numbers are displayed in hexadecimal):
 
-|LSB|MSB|Name| |BMS|Notes|
-|---|---|----|-|---|-----|
-|0|20|Bank Select|⇒|A4/AC| |
-|7|27|Volume|⇒|9C-9F| |
-|A|2A|Pan|⇒|9C-9F| |
+|LSB|MSB|Name|BMS|Notes|
+|---|---|----|---|-----|
+|0|20|Bank Select|A4/AC| |
+|7|27|Volume|9C-9F| |
+|A|2A|Pan|9C-9F| |
 
 ## Inserting Raw BMS Commands
 
