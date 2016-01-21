@@ -1,29 +1,26 @@
-﻿namespace arookas
-{
-	class BmsOptions
-	{
+﻿namespace arookas {
+	class BmsOptions {
 		// these are fields so I can pass them to ref/out parameters
-		public string InputFile;
-		public string OutputFile;
+		public string mInputFile;
+		public string mOutputFile;
 
-		public bool IgnoreMidiBanks;
-		public bool IgnoreMidiPrograms;
-		public bool IgnoreMidiPitchBends;
-		public bool IgnoreMidiExpressions;
-		public bool IgnoreMidiVolumes;
-		public bool IgnoreMidiPans;
-		public bool AddTrackInit;
-		public bool SkipPitchRange;
-		public bool Batch;
+		public bool mIgnoreBanks;
+		public bool mIgnorePrograms;
+		public bool mIgnorePitchBends;
+		public bool mIgnoreExpressions;
+		public bool mIgnoreVolumes;
+		public bool mIgnorePans;
+		public bool mAddTrackInit;
+		public bool mSkipPitchRange;
+		public bool mBatch;
 
-		public BmsTrackDetectionMode TrackDetection = BmsTrackDetectionMode.Auto;
+		public BmsTrackDetectionMode mTrackMode = BmsTrackDetectionMode.Auto;
 
-		public double VelocityScale = 1.0d;
-		public ushort PerfDuration;
+		public double mVelScale = 1.0d;
+		public ushort mPerfDuration;
 	}
 
-	enum BmsTrackDetectionMode
-	{
+	enum BmsTrackDetectionMode {
 		Manual,
 		Auto,
 	}

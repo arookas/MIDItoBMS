@@ -5,138 +5,118 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace arookas
-{
-	class MidiConverter
-	{
-		Midi midi;
-		BmsOptions bOptions;
+namespace arookas {
+	class MidiConverter {
+		Midi mMidi;
+		BmsOptions mOptions;
 
-		BmsWriter bWriter;
-		Stack<BmsPoint?> loopPoints;
-		MidiMetaData metaData;
-		BmsVoices bVoices;
+		BmsWriter mWriter;
+		Stack<BmsPoint?> mLoopPoints;
+		MidiMetaData mMetaData;
+		BmsVoices mVoices;
 
-		CC ccBank;
-		CC ccVol;
-		CC ccPan;
+		CC mBankCC;
+		CC mVolCC;
+		CC mPanCC;
 
-		private MidiConverter() { }
+		MidiConverter() { }
 
-		public static void Convert(Midi midi, BmsOptions bOptions)
-		{
-			MidiConverter conv = new MidiConverter();
-			conv.ConvertMidi(midi, bOptions);
+		public static void Convert(Midi midi, BmsOptions options) {
+			var conv = new MidiConverter();
+			conv.ConvertMidi(midi, options);
 		}
 
-		void ConvertMidi(Midi midi, BmsOptions bOptions)
-		{
+		void ConvertMidi(Midi midi, BmsOptions options) {
 			// init
-			this.midi = midi;
-			this.bOptions = bOptions;
-			loopPoints = new Stack<BmsPoint?>(10);
-			bVoices = new BmsVoices();
-			ccBank = new CC();
-			ccVol = new CC();
-			ccPan = new CC();
+			mMidi = midi;
+			mOptions = options;
+			mLoopPoints = new Stack<BmsPoint?>(10);
+			mVoices = new BmsVoices();
+			mBankCC = new CC();
+			mVolCC = new CC();
+			mPanCC = new CC();
 
 			DetectTracks();
 			CheckLoopPoints();
 			Console.WriteLine("Writing BMS...");
-			bWriter = new BmsWriter(File.Create(bOptions.OutputFile));
-			// root
-			Console.WriteLine("Writing root track...");
-			BmsPoint?[] childPoints = new BmsPoint?[16];
-			for (int i = 0; i < 16; ++i)
-			{
-				if (metaData[i] == null)
-				{
-					continue;
+			using (var file = File.Create(options.mOutputFile)) {
+				mWriter = new BmsWriter(file);
+
+				// root
+				Console.WriteLine("Writing root track...");
+				BmsPoint?[] childPoints = new BmsPoint?[16];
+				for (var i = 0; i < 16; ++i) {
+					if (mMetaData[i] == null) {
+						continue;
+					}
+					childPoints[i] = mWriter.WriteAddChild((byte)i);
 				}
-				childPoints[i] = bWriter.WriteAddChild((byte)i);
+				mWriter.WritePpqn((ushort)(midi.Division as TicksPerBeatDivision).TicksPerBeat);
+				ConvertTrack(mMetaData.Root);
+
+				// children
+				for (var i = 0; i < 16; ++i) {
+					if (childPoints[i] == null) {
+						continue;
+					}
+					Console.WriteLine("Writing child track {0}...", i);
+					mWriter.ClosePoint(childPoints[i].Value);
+					if (options.mAddTrackInit) {
+						mWriter.WriteTrackInit(0);
+					}
+					ConvertTrack(mMetaData[i]);
+				}
+				Console.WriteLine("Finished writing BMS.");
+				Console.WriteLine("Closing file...");
 			}
-			bWriter.WritePpqn((ushort)(midi.Division as TicksPerBeatDivision).TicksPerBeat);
-			ConvertTrack(metaData.Root);
-			// children
-			for (int i = 0; i < 16; ++i)
-			{
-				if (childPoints[i] == null)
-				{
-					continue;
-				}
-				Console.WriteLine("Writing child track {0}...", i);
-				bWriter.ClosePoint(childPoints[i].Value);
-				if (bOptions.AddTrackInit)
-				{
-					bWriter.WriteTrackInit(0);
-				}
-				ConvertTrack(metaData[i]);
-			}
-			Console.WriteLine("Finished writing BMS.");
-			Console.WriteLine("Closing file...");
-			bWriter.Dispose();
 			Console.WriteLine("Closed file.");
 		}
-		void DetectTracks()
-		{
+		void DetectTracks() {
 			Console.WriteLine("Collecting meta data and detecting tracks...");
-			metaData = new MidiMetaData(midi, bOptions.TrackDetection);
+			mMetaData = new MidiMetaData(mMidi, mOptions.mTrackMode);
 			Console.WriteLine("Done.");
 		}
-		void CheckLoopPoints()
-		{
+		void CheckLoopPoints() {
 			Console.WriteLine("Checking loop points...");
-			int scope = 0;
-			foreach (var track in midi)
-			{
-				foreach (var e in track.All<ControlChangeEvent>())
-				{
-					switch (e.Controller)
-					{
+			var scope = 0;
+			foreach (var track in mMidi) {
+				foreach (var e in track.All<ControlChangeEvent>()) {
+					switch (e.Controller) {
 						case MidiController.EMidiLoopBegin:
-						case MidiController.EMidiGlobalLoopBegin:
-						{
+						case MidiController.EMidiGlobalLoopBegin: {
 							++scope;
 							break;
 						}
 						case MidiController.EMidiLoopEnd:
-						case MidiController.EMidiGlobalLoopEnd:
-						{
+						case MidiController.EMidiGlobalLoopEnd: {
 							--scope;
 							break;
 						}
 					}
-					if (scope < 0)
-					{
-						MIDItoBMS.Error("Loop is missing a start point.");
+					if (scope < 0) {
+						MIDItoBMS.error("Loop is missing a start point.");
 					}
 				}
 			}
-			if (scope > 0)
-			{
-				MIDItoBMS.Error("Loop is missing an end point.");
+			if (scope > 0) {
+				MIDItoBMS.error("Loop is missing an end point.");
 			}
 			Console.WriteLine("Loop points seem fine.");
 			Console.WriteLine("Detecting global loop points...");
-			var loops = metaData.Root.MidiTrack.Where<ControlChangeEvent>(IsEMidiGlobalLoopPoint).ToArray();
-			if (loops.Length > 0)
-			{
+			var loops = mMetaData.Root.MidiTrack.Where<ControlChangeEvent>(IsEMidiGlobalLoopPoint).ToArray();
+			if (loops.Length > 0) {
 				Console.WriteLine("Global loop points detected.");
 				Console.WriteLine("Converting global loop points...");
-				foreach (var track in midi)
-				{
+				foreach (var track in mMidi) {
 					track.RemoveAll<ControlChangeEvent>(IsEMidiGlobalLoopPoint);
 					track.AddRange(loops.Select(loop => new ControlChangeEvent(loop.Time, loop.ChannelNumber, loop.ControllerNumber - 2, loop.ControllerValue)));
 				}
 			}
 		}
-		static bool IsEMidiGlobalLoopPoint(ControlChangeEvent e)
-		{
-			switch (e.Controller)
-			{
+		static bool IsEMidiGlobalLoopPoint(ControlChangeEvent e) {
+			switch (e.Controller) {
 				case MidiController.EMidiGlobalLoopBegin:
-				case MidiController.EMidiGlobalLoopEnd:
-				{
+				case MidiController.EMidiGlobalLoopEnd: {
 					return true;
 				}
 			}
@@ -144,38 +124,34 @@ namespace arookas
 		}
 
 		// track
-		void ConvertTrack(MidiTrackMetaData mTrack)
-		{
-			ushort pdur = bOptions.PerfDuration;
+		void ConvertTrack(MidiTrackMetaData mTrack) {
+			ushort pdur = mOptions.mPerfDuration;
 			ulong time = 0;
-			foreach (var e in mTrack.MidiTrack)
-			{
+			foreach (var e in mTrack.MidiTrack) {
 				// delta
-				bWriter.WriteDelay(e.Time - time);
+				mWriter.WriteDelay(e.Time - time);
 				time = e.Time;
 
-				switch (e.EventType)
-				{
-					case MidiEventType.Channel:
-					{
+				switch (e.EventType) {
+					case MidiEventType.Channel: {
 						var ev = (e as ChannelEvent);
-						if (ev.ChannelNumber == mTrack.TrackId)
-						{
+						if (ev.ChannelNumber == mTrack.TrackId) {
 							ConvertChannelEvent(ev);
 						}
 						break;
 					}
-					case MidiEventType.Meta: ConvertMetaEvent(e as MetaEvent); break;
+					case MidiEventType.Meta: {
+						ConvertMetaEvent(e as MetaEvent);
+						break;
+					}
 				}
 				// silently ignore unsupported events
 			}
 		}
 
 		// channel
-		void ConvertChannelEvent(ChannelEvent e)
-		{
-			switch (e.ChannelEventType)
-			{
+		void ConvertChannelEvent(ChannelEvent e) {
+			switch (e.ChannelEventType) {
 				case ChannelEventType.NoteOn: ConvertNoteOn(e as NoteOnEvent); break;
 				case ChannelEventType.NoteOff: ConvertNoteOff(e as NoteOffEvent); break;
 				case ChannelEventType.PitchBend: ConvertPitchBend(e as PitchBendEvent); break;
@@ -184,157 +160,143 @@ namespace arookas
 			}
 			// silently ignore unsupported events
 		}
-		void ConvertNoteOn(NoteOnEvent e)
-		{
+		void ConvertNoteOn(NoteOnEvent e) {
 			byte note = (byte)e.NoteNumber;
-			if (e.Velocity > 0)
-			{
-				bWriter.WriteVoiceOn(note, (byte)(bVoices.Alloc(note) + 1), (byte)e.Velocity);
+			if (e.Velocity > 0) {
+				mWriter.WriteVoiceOn(note, (byte)(mVoices.Alloc(note) + 1), (byte)e.Velocity);
 			}
-			else
-			{
-				bWriter.WriteVoiceOff((byte)(bVoices.Free(note) + 1));
+			else {
+				mWriter.WriteVoiceOff((byte)(mVoices.Free(note) + 1));
 			}
 		}
-		void ConvertNoteOff(NoteOffEvent e)
-		{
-			bWriter.WriteVoiceOff((byte)(bVoices.Free((byte)e.NoteNumber) + 1));
+		void ConvertNoteOff(NoteOffEvent e) {
+			mWriter.WriteVoiceOff((byte)(mVoices.Free((byte)e.NoteNumber) + 1));
 		}
-		void ConvertPitchBend(PitchBendEvent e)
-		{
-			bWriter.WritePerf(BmsPerfType.Pitch, (short)((e.PitchBend - 8192) * 4), bOptions.PerfDuration);
+		void ConvertPitchBend(PitchBendEvent e) {
+			mWriter.WritePerf(BmsPerfType.Pitch, (short)((e.PitchBend - 8192) * 4), mOptions.mPerfDuration);
 		}
-		void ConvertProgramSelect(ProgramChangeEvent e)
-		{
-			bWriter.WriteProgramSelect((byte)e.ProgramNumber);
+		void ConvertProgramSelect(ProgramChangeEvent e) {
+			mWriter.WriteProgramSelect((byte)e.ProgramNumber);
 		}
-		void ConvertControlChange(ControlChangeEvent e)
-		{
+		void ConvertControlChange(ControlChangeEvent e) {
 			bool msb = e.Controller.IsMSB();
-			switch (e.Controller)
-			{
+			switch (e.Controller) {
 				case MidiController.BankSelect_MSB:
-				case MidiController.BankSelect_LSB:
-				{
+				case MidiController.BankSelect_LSB: {
 					ConvertBankSelect(e, msb);
 					break;
 				}
 				case MidiController.Volume_MSB:
-				case MidiController.Volume_LSB:
-				{
+				case MidiController.Volume_LSB: {
 					ConvertVolume(e, msb);
 					break;
 				}
 				case MidiController.Pan_MSB:
-				case MidiController.Pan_LSB:
-				{
+				case MidiController.Pan_LSB: {
 					ConvertPan(e, msb);
 					break;
 				}
-				case MidiController.EMidiLoopBegin: ConvertLoopBegin(e); break;
-				case MidiController.EMidiLoopEnd: ConvertLoopEnd(e); break;
+				case MidiController.EMidiLoopBegin: {
+					ConvertLoopBegin(e);
+					break;
+				}
+				case MidiController.EMidiLoopEnd: {
+					ConvertLoopEnd(e);
+					break;
+				}
 			}
 			// silently ignore unsupported events
 		}
 
 		// controller
-		void ConvertBankSelect(ControlChangeEvent e, bool msb)
-		{
-			ccBank.Set((sbyte)e.ControllerValue, msb);
-			bWriter.WriteBankSelect(ccBank);
+		void ConvertBankSelect(ControlChangeEvent e, bool msb) {
+			mBankCC.Set((sbyte)e.ControllerValue, msb);
+			mWriter.WriteBankSelect(mBankCC);
 		}
-		void ConvertVolume(ControlChangeEvent e, bool msb)
-		{
-			ccVol.Set((sbyte)e.ControllerValue, msb);
-			bWriter.WritePerf(BmsPerfType.Volume, ccVol, bOptions.PerfDuration);
+		void ConvertVolume(ControlChangeEvent e, bool msb) {
+			mVolCC.Set((sbyte)e.ControllerValue, msb);
+			mWriter.WritePerf(BmsPerfType.Volume, mVolCC, mOptions.mPerfDuration);
 		}
-		void ConvertPan(ControlChangeEvent e, bool msb)
-		{
-			ccPan.Set((sbyte)e.ControllerValue, msb);
-			bWriter.WritePerf(BmsPerfType.Pan, ccPan, bOptions.PerfDuration);
+		void ConvertPan(ControlChangeEvent e, bool msb) {
+			mPanCC.Set((sbyte)e.ControllerValue, msb);
+			mWriter.WritePerf(BmsPerfType.Pan, mPanCC, mOptions.mPerfDuration);
 		}
-		void ConvertLoopBegin(ControlChangeEvent e)
-		{
-			if (e.ControllerValue > 0)
-			{
-				bWriter.WriteLoopBegin((ushort)e.ControllerValue);
-				loopPoints.Push(null);
+		void ConvertLoopBegin(ControlChangeEvent e) {
+			if (e.ControllerValue > 0) {
+				mWriter.WriteLoopBegin((ushort)e.ControllerValue);
+				mLoopPoints.Push(null);
 			}
-			else
-			{
-				loopPoints.Push(bWriter.OpenPoint());
+			else {
+				mLoopPoints.Push(mWriter.OpenPoint());
 			}
 		}
-		void ConvertLoopEnd(ControlChangeEvent e)
-		{
-			BmsPoint? point = loopPoints.Pop();
-			if (point == null)
-			{
-				bWriter.WriteLoopEnd();
+		void ConvertLoopEnd(ControlChangeEvent e) {
+			BmsPoint? point = mLoopPoints.Pop();
+			if (point == null) {
+				mWriter.WriteLoopEnd();
 			}
-			else
-			{
-				bWriter.WriteSeekEx(point.Value);
+			else {
+				mWriter.WriteSeekEx(point.Value);
 			}
 		}
 
 		// meta
-		void ConvertMetaEvent(MetaEvent e)
-		{
-			switch (e.MetaEventType)
-			{
-				case MetaEventType.EndOfTrack: ConvertEOT(e as EndOfTrackEvent); break;
-				case MetaEventType.TempoChange: ConvertTempo(e as TempoChangeEvent); break;
-				case MetaEventType.SequencerSpecific: ConvertSequencerSpecific(e as SequencerSpecificEvent); break;
+		void ConvertMetaEvent(MetaEvent e) {
+			switch (e.MetaEventType) {
+				case MetaEventType.EndOfTrack: {
+					ConvertEOT(e as EndOfTrackEvent);
+					break;
+				}
+				case MetaEventType.TempoChange: {
+					ConvertTempo(e as TempoChangeEvent);
+					break;
+				}
+				case MetaEventType.SequencerSpecific: {
+					ConvertSequencerSpecific(e as SequencerSpecificEvent);
+					break;
+				}
 			}
 			// silently ignore unsupported events
 		}
-		void ConvertEOT(EndOfTrackEvent e)
-		{
-			bWriter.WriteTrackEnd();
+		void ConvertEOT(EndOfTrackEvent e) {
+			mWriter.WriteTrackEnd();
 		}
-		void ConvertTempo(TempoChangeEvent e)
-		{
-			bWriter.WriteTempo((ushort)e.BeatsPerMinute);
+		void ConvertTempo(TempoChangeEvent e) {
+			mWriter.WriteTempo((ushort)e.BeatsPerMinute);
 		}
-		void ConvertSequencerSpecific(SequencerSpecificEvent e)
-		{
-			if (e.Id == MidiId.Placeholder)
-			{
-				bWriter.WriteRaw(e.Data.ToArray());
+		void ConvertSequencerSpecific(SequencerSpecificEvent e) {
+			if (e.Id == MidiId.Placeholder) {
+				mWriter.WriteRaw(e.Data.ToArray());
 			}
 		}
 
 		// util types
-		class BmsVoices
-		{
-			public const int VoiceCount = 7;
-			byte?[] voices;
+		class BmsVoices {
+			byte?[] mVoices;
 
-			int FreeCount { get { return voices.Count(i => i == null); } }
-			bool HasFreeVoice { get { return FreeCount > 0; } }
+			public const int cVoiceCount = 7;
 
-			public BmsVoices()
-			{
-				voices = new byte?[VoiceCount];
+			public BmsVoices() {
+				mVoices = new byte?[cVoiceCount];
 			}
 
-			public byte Alloc(byte note)
-			{
-				if (!HasFreeVoice)
-				{
-					throw new InvalidOperationException("Failed to allocate a voice.");
+			public int Alloc(byte note) {
+				for (var i = 0; i < mVoices.Length; ++i) {
+					if (mVoices[i] == null) {
+						mVoices[i] = note;
+						return i;
+					}
 				}
-				int i = voices.IndexOfFirst(j => j == null);
-				voices[i] = note;
-				return (byte)i;
-
+				throw new InvalidOperationException("Failed to allocate a voice.");
 			}
-			public byte Free(byte note)
-			{
-				int i = voices.IndexOfFirst(j => j == note);
-				voices[i] = null;
-				return (byte)i;
+			public int Free(byte note) {
+				for (var i = 0; i < mVoices.Length; ++i) {
+					if (mVoices[i] == note) {
+						mVoices[i] = null;
+						return i;
+					}
+				}
+				throw new InvalidOperationException("Failed to free a voice.");
 			}
 		}
 	}

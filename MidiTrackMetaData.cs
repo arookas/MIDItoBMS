@@ -8,105 +8,107 @@ namespace arookas
 {
 	class MidiTrackMetaData
 	{
-		public MidiTrack MidiTrack { get; private set; }
-		public BmsTrackType? TrackType { get; private set; }
-		public int? TrackId { get; private set; }
-		public short? TrackArg { get; private set; }
+		MidiTrack mTrack;
+		BmsTrackType mType;
+		int? mId;
+		short? mArg;
 
-		static Regex trackRegex = new Regex(@"(?'key'[a-z0-9.-]+)\s*:\s*(?'value'[a-z0-9.-]+)", RegexOptions.IgnoreCase);
-		static Regex intRegex = new Regex(@"^(?'isNeg'-)?(?'value'[0-9a-f]+)(?'isHex'h)?$", RegexOptions.IgnoreCase);
-		static Regex floatRegex = new Regex(@"^(?'value'-?[0-9.]+)?$");
-		static Dictionary<string, Parser> parsers = new Dictionary<string, Parser>()
-		{
-			{ "track-type", ParseTrackType },
-			{ "track-id", ParseTrackId },
-			{ "track-arg", ParseTrackArg },
+		public MidiTrack MidiTrack {
+			get {
+				return mTrack;
+			}
+		}
+		public BmsTrackType? TrackType {
+			get {
+				return mType;
+			}
+		}
+		public int? TrackId {
+			get {
+				return mId;
+			}
+		}
+		public short? TrackArg {
+			get {
+				return mArg;
+			}
+		}
+
+		static Regex sTrackRegex = new Regex(@"(?'key'[a-z0-9.-]+)\s*:\s*(?'value'[a-z0-9.-]+)", RegexOptions.IgnoreCase);
+		static Regex sIntRegex = new Regex(@"^(?'isNeg'-)?(?'value'[0-9a-f]+)(?'isHex'h)?$", RegexOptions.IgnoreCase);
+		static Regex sFloatRegex = new Regex(@"^(?'value'-?[0-9.]+)?$");
+		static Dictionary<string, Parser> sParserLUT = new Dictionary<string, Parser>() {
+			{ "track-type", parseTrackType },
+			{ "track-id", parseTrackId },
+			{ "track-arg", parseTrackArg },
 		};
 
-		MidiTrackMetaData(MidiTrack mTrack)
-		{
-			MidiTrack = mTrack;
-			if (MidiTrack.Name != null)
-			{
-				var matches = trackRegex.Matches(MidiTrack.Name);
-				for (int i = 0; i < matches.Count; ++i)
-				{
-					string keyName = matches[i].Groups["key"].Value.ToLowerInvariant();
-					string keyValue = matches[i].Groups["value"].Value;
-					if (parsers.ContainsKey(keyName))
-					{
-						parsers[keyName](this, keyValue);
+		MidiTrackMetaData(MidiTrack track) {
+			mTrack = track;
+			if (mTrack.Name != null) {
+				var matches = sTrackRegex.Matches(mTrack.Name);
+				for (var i = 0; i < matches.Count; ++i) {
+					var name = matches[i].Groups["key"].Value.ToLowerInvariant();
+					var value = matches[i].Groups["value"].Value;
+					if (sParserLUT.ContainsKey(name)) {
+						sParserLUT[name](this, value);
 					}
 				}
 			}
 		}
 
-		public static MidiTrackMetaData FromTrack(MidiTrack mTrack)
-		{
-			if (mTrack == null)
-			{
+		public static MidiTrackMetaData fromTrack(MidiTrack track) {
+			if (track == null) {
 				return null;
 			}
-			return new MidiTrackMetaData(mTrack);
+			return new MidiTrackMetaData(track);
 		}
 
-		static void ParseTrackType(MidiTrackMetaData meta, string keyValue)
-		{
-			BmsTrackType value;
-			if (Enum.TryParse(keyValue, true, out value))
-			{
-				meta.TrackType = value;
+		static void parseTrackType(MidiTrackMetaData meta, string value) {
+			BmsTrackType result;
+			if (Enum.TryParse(value, true, out result)) {
+				meta.mType = result;
 			}
 		}
-		static void ParseTrackId(MidiTrackMetaData meta, string keyValue)
-		{
-			int value;
-			if (ParseInt(keyValue, 0, 15, out value))
-			{
-				meta.TrackId = value;
+		static void parseTrackId(MidiTrackMetaData meta, string value) {
+			int result;
+			if (parseInt(value, 0, 15, out result)) {
+				meta.mId = result;
 			}
 		}
-		static void ParseTrackArg(MidiTrackMetaData meta, string keyValue)
-		{
-			int value;
-			if (ParseInt(keyValue, Int16.MinValue, Int16.MaxValue, out value))
-			{
-				meta.TrackArg = (short)value;
+		static void parseTrackArg(MidiTrackMetaData meta, string value) {
+			int result;
+			if (parseInt(value, Int16.MinValue, Int16.MaxValue, out result)) {
+				meta.mArg = (short)result;
 			}
 		}
 
-		static bool ParseInt(string str, int min, int max, out int result)
-		{
+		static bool parseInt(string str, int min, int max, out int result) {
 			result = 0;
-			var match = intRegex.Match(str);
-			if (!match.Success)
-			{
+			var match = sIntRegex.Match(str);
+			if (!match.Success) {
 				return false;
 			}
-			string value = match.Groups["value"].Value;
-			bool isHex = match.Groups["isHex"].Success;
-			bool isNeg = match.Groups["isNeg"].Success;
-			NumberStyles style = NumberStyles.None;
-			if (isHex)
-			{
+			var value = match.Groups["value"].Value;
+			var isHex = match.Groups["isHex"].Success;
+			var isNeg = match.Groups["isNeg"].Success;
+			var style = NumberStyles.None;
+			if (isHex) {
 				style |= NumberStyles.AllowHexSpecifier;
 			}
-			if (!Int32.TryParse(value, style, null, out result))
-			{
+			if (!Int32.TryParse(value, style, null, out result)) {
 				return false;
 			}
-			if (isNeg)
-			{
+			if (isNeg) {
 				result = -result;
 			}
 			return result >= min && result <= max;
 		}
 
-		delegate void Parser(MidiTrackMetaData meta, string keyValue);
+		delegate void Parser(MidiTrackMetaData meta, string value);
 	}
 
-	enum BmsTrackType
-	{
+	enum BmsTrackType {
 		Root,
 		Child,
 	}
