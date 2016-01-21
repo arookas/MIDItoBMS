@@ -8,23 +8,6 @@ The *MIDItoBMS* converter also supports loop-point controllers from the EMIDI sp
 
 Specifically, the goal of this program is to output a BMS file with equivalent contents to that of a given MIDI file, losslessly. This definition means it is unreasonable to expect a MIDI file originally converted from a BMS file to be put through the program and result in a BMS file identical to the original — while MIDI > BMS is a lossless conversion, BMS > MIDI is not.
 
-### Changelog
-
-#### v0.3.0
-
-* **Updated** to newest *arookas.dll*
-* **Updated** the format and capabilities of the sequencer-specified events
-* **Optimized** output BMS to compress various commands
-* **Added** support for 24-bit delays
-* **Added** MSB/LSB support for several controllers (e.g. bank, pan)
-* **Added** support for specified performance-control interpolation
-* **Added** new, optional command-line parameter to specify output file name
-* **Removed** support for the expression controller
-
-#### v0.2.1
-
-* Initial release
-
 ## Usage
 
 *MIDItoBMS* has two command-line modes; which is used depends on how many arguments are specified.
