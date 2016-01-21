@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("miditobms")]
@@ -7,7 +6,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("arookas")]
 [assembly: AssemblyProduct("miditobms")]
-[assembly: AssemblyCopyright("Copyright © 2014-2015 arookas")]
+[assembly: AssemblyCopyright("Copyright © 2014-2016 arookas")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: ComVisible(false)]
