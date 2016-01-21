@@ -8,3 +8,7 @@ Properties/
 *.v12.suo
 *.csproj
 *.csproj.user
+
+# executables
+*.exe
+*.bat
