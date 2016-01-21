@@ -3,7 +3,7 @@ workspace "miditobms"
 	targetdir "bin/%{cfg.buildcfg}"
 	libdirs { "lib" }
 	
-	startproject "frontend"
+	startproject "miditobms"
 	
 	filter "configurations:Debug"
 		defines { "DEBUG" }
