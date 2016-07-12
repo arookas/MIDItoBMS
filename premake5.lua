@@ -14,7 +14,7 @@ workspace "miditobms"
 		optimize "On"
 	
 	project "miditobms"
-		kind "SharedLib"
+		kind "ConsoleApp"
 		language "C#"
 		namespace "arookas"
 		location "miditobms"
