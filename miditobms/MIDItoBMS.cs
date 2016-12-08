@@ -10,6 +10,7 @@ namespace arookas {
 		static readonly string sSeparator = new String('=', 75);
 
 		static int Main(string[] args) {
+			sOptions = new BmsOptions();
 			write("miditobms v{0} arookas\n", sVersion);
 			separator();
 #if !DEBUG
