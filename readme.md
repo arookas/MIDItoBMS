@@ -6,7 +6,12 @@ _MIDItoBMS_ is a command-line program I've been developing purely for fun and to
 
 The _MIDItoBMS_ converter also supports loop-point controllers from the EMIDI specifications in order to specify loops. Various modes and options can also be enabled or configured through optional arguments in the command line. Even more BMS features not directly supported by _MIDItoBMS_ can still be used indirectly via sequencer-specific events.
 
-Specifically, the goal of this program is to output a BMS file with equivalent contents to that of a given MIDI file, losslessly. This definition means it is unreasonable to expect a MIDI file originally converted from a BMS file to be put through the program and result in a BMS file identical to the original &mdash; while MIDI > BMS is a lossless conversion, BMS > MIDI is not.
+### Disclaimer
+Specifically, the goal of this program is to output a BMS file with equivalent contents to that of a given MIDI file, losslessly. This definition implies it is unreasonable to expect a MIDI file originally converted from a BMS file to be put through the program and result in a BMS file identical to the original &mdash; while MIDI > BMS is a lossless conversion, BMS > MIDI is not.
+
+> _**Note:** Almost nothing is reinterpreted from the original MIDI during conversion in order to output a more suitable BMS for playback in-game. This includes channel, program, and bank numbers. The only exceptions to this are lower-level things needed to get the BMS to play like a MIDI:_
+> * _C1 commands are inserted in the beginning of the root track to open the child tracks._
+> * _MIDI controller values are scaled from 14-bit to 16-bit._
 
 ## Usage
 
@@ -24,7 +29,7 @@ The options must be one or more of the following:
 |_**-ignoremidiprograms <br> -ignoremidibanks <br> -ignoremidipitchbends <br> -ignoremidipans <br> -ignoremidivolumes**_|Disables the support for MIDI events or controllers of the specified type. They will be ignored when encountered. Instead, sequencer-specific events must be used to change the respective variables. By default, these MIDI events and controllers are not ignored.|
 |_**-trackdetection** &lt;mode&gt;_|Sets which mode is used to detect root and child tracks in the MIDI. By default, automatic track detection is enabled.|
 |_**-addtrackinit**_|Enables the automatic addition of the track-initialization callback command (E7) to each detected child track (not the global/root track). The argument passed to each callback will default to zero (unless overwritten by the track's meta data). By default, E7 commands are not added to the beginning of each child track.|
-|_**-velocityscale** &lt;file&gt;_|Changes the scale of the velocity of all the note-on events in the input MIDI. _\&lt;scalar&gt;_ is a double-precision floating-point number. Values less than one soften notes, while values greater than one amplify notes. The scaled velocities will still be clamped to the range 0 - 127. By default, the velocity scalar is one.|
+|_**-velscale** &lt;scalar&gt;_|Changes the scale of the velocity of all the note-on events in the input MIDI. _&lt;scalar&gt;_ is a double-precision floating-point number. Values less than one soften notes, while values greater than one amplify notes. The scaled velocities will still be clamped to the range 0 - 127. By default, the velocity scalar is one.|
 |_**-skippitchrange**_|Skips the automatic addition of a pitch-range command being added to child tracks. Useful if the MIDI ends up overriding it anyway. By default, the pitch range is set to ±2 semitones (the default as per the MIDI standard).|
 |_**-perfduration** &lt;pulses&gt;_|Enables performance-control interpolation by putting the constant value _&lt;pulses&gt;_ (specified as a 16-bit, unsigned integer) as the duration of each performance-control command. May result in the a smoother-sounding BMS. Low values are recommended. Default value is zero (disabled).|
 |_**-batch**_|Disables any usage of stdin. This makes it useful for batch usage, as the program will run and end without pausing for input. By default, this is disabled so drag-and-drop users are able to read and analyze any ouput (including error messages) in the console window.|
@@ -63,7 +68,7 @@ The meta data is formatted in a comma-separated list of key-value pairs. The key
 |_**track-id**_|Specifies the track ID of the track. Must be a whole number between 0 and 15 (inclusive).|
 |_**track-arg**_|Specifies the argument to pass to the track-initialization command on the track, as a 16-bit, signed integer. Only used if the _**-addtrackinit**_ option is specified on the command line. If this key is not present, a default value of zero is assumed.|
 
-Note that for all integer keys, the value is assumed to be specified in decimal. To specify the value in hexadecimal, suffix the value with the letter "H" (case insensitive).
+> _**Note:** For all integer keys, the value is assumed to be specified in decimal. To specify the value in hexadecimal, suffix the value with the letter "H" (case insensitive)._
 
 ## Implementation
 
@@ -90,6 +95,8 @@ _MIDItoBMS_ implements most channel events. Only channel events whose channel nu
 |Channel Aftertouch| |**Not supported.**|
 |Controller|???|Some controllers are supported (see below).|
 
+> _**Note:** Some games may not load samples for all programs at all times. In this case, the track may be silent or incorrect when being played in the game. Make sure the samples for the program you are using are indeed loaded by the game when the BMS file is being played._
+
 ### Meta Events
 
 The following meta events are supported by _MIDItoBMS_:
@@ -99,7 +106,7 @@ The following meta events are supported by _MIDItoBMS_:
 |Tempo Change|FD|Default tempo is 120 BPM (for the root track) or inherited from the parent (for child tracks). Should be placed on the root track; otherwise, you might get unpredictable results.|
 |Track Name| |Used only to store meta data for the track.|
 |Sequencer-specific| |Used for inserting raw BMS commands (see below).|
-|End of Track|FF|Ends the track. (Note that when a track ends, all of descendant tracks are automatically ended as well).|
+|End of Track|FF|Ends the track. _(When a track ends, all of descendant tracks are automatically ended as well)._|
 
 ### Controllers
 
@@ -131,6 +138,6 @@ Loops specify that a segment of a sequence must repeat a specified number of tim
 |116|Sets the begin-point of the loop. All events after this on the same pulse will also be included in the loop.|
 |117|Sets the end-point of the loop. All events before this on the same pulse will also be included in the loop.|
 
-_**Note:** **CC \#118** and **CC \#119** are global loop start and end points, respectively. They work exactly to their local counterparts, but define loop points for all tracks &mdash; not just the one on which they are placed. You can use these to simplify syncing loop points among all tracks in a MIDI file._
+> _**Note:** **CC \#118** and **CC \#119** are global loop start and end points, respectively. They work exactly to their local counterparts, but define loop points for all tracks &mdash; not just the one on which they are placed. You can use these to simplify syncing loop points among all tracks in a MIDI file._
 
 The value associated with the loop begin controller indicates how many times to loop. A value of zero indicates an indefinite loop, while any greater value indicates the number of times to loop (a fixed loop). A loop is described here as how many times the segment of the sequence is to be repeated &mdash; not how many times it is to be played (i.e. a loop count of 3 will make the segment play a total of 4 times). The value of a loop-end controller (both local and global) must be 127, as per the EMIDI specifications.
