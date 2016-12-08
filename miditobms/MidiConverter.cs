@@ -215,11 +215,11 @@ namespace arookas {
 		}
 		void ConvertVolume(ControlChangeEvent e, bool msb) {
 			mVolCC.Set((sbyte)e.ControllerValue, msb);
-			mWriter.WritePerf(BmsPerfType.Volume, mVolCC, mOptions.mPerfDuration);
+			mWriter.WritePerf(BmsPerfType.Volume, (short)(mVolCC.Value * 2), mOptions.mPerfDuration);
 		}
 		void ConvertPan(ControlChangeEvent e, bool msb) {
 			mPanCC.Set((sbyte)e.ControllerValue, msb);
-			mWriter.WritePerf(BmsPerfType.Pan, mPanCC, mOptions.mPerfDuration);
+			mWriter.WritePerf(BmsPerfType.Pan, (short)(mPanCC.Value * 2), mOptions.mPerfDuration);
 		}
 		void ConvertLoopBegin(ControlChangeEvent e) {
 			if (e.ControllerValue > 0) {
