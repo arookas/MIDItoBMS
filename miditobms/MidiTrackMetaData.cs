@@ -109,6 +109,7 @@ namespace arookas
 	}
 
 	enum BmsTrackType {
+		Unspecified,
 		Root,
 		Child,
 	}
